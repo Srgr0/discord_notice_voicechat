@@ -3,17 +3,16 @@ from discord import app_commands
 import json
 from datetime import datetime
 
-intents=discord.Intents.default()
-client=discord.Client(intents=intents)
-tree=app_commands.CommandTree(client)
-
-class MyClient(app_commands.Bot):
+class MyClient(discord.Client):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        intents = discord.Intents.default()
+        intents.guilds = True
+        intents.voice_states = True
+        super().__init__(intents=intents, *args, **kwargs)
         self.settings_file = 'settings.json'
         self.load_settings()
         self.voice_states = {}
-        self.synced = True
+        self.synced = False
 
     # 設定を読み込む
     def load_settings(self):
@@ -35,6 +34,8 @@ class MyClient(app_commands.Bot):
         if system_channel:
             self.server_settings[str(guild.id)] = {'text_channel_id': system_channel.id}
             self.save_settings()
+        else:
+            print(f"System channel not found in {guild.name}.")
 
     # ボイスチャットの状況が更新されたら起動する
     async def on_voice_state_update(self, member, before, after):
@@ -92,7 +93,7 @@ class MyClient(app_commands.Bot):
         print(f"Logged in as {self.user}")
 
     # チャンネルの変更
-    @tree.command(name='Set channel', description='投稿するテキストチャンネルを設定します。')
+    @tree.command(name='set_channel', description='投稿するテキストチャンネルを設定します。')
     async def set_channel(self, ctx, channel_id: int):
         guild_id = str(ctx.guild.id)
         if guild_id in self.server_settings:
@@ -103,7 +104,7 @@ class MyClient(app_commands.Bot):
             await ctx.respond("このサーバーの設定が見つかりません。")
 
     # メッセージの追加
-    @tree.command(name='Add message', description='投稿時に任意のメッセージを追加します。')
+    @tree.command(name='add_message', description='投稿時に任意のメッセージを追加します。')
     async def add_message(self, ctx, message: str):
         if len(message) > 200:
             await ctx.respond("メッセージは200文字以内にしてください。")
