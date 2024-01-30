@@ -53,8 +53,18 @@ class MyBot(discord.Client):
             self.synced = True
         print(f"Logged in as {self.user}")
 
+    # スラッシュコマンドの実行権限をチェックする (管理者のみに制限)
+    async def check_admin_permissions(self, interaction: discord.Interaction):
+        if interaction.user.guild_permissions.administrator:
+            return True
+        else:
+            await interaction.response.send_message("このコマンドを使用するには管理者権限が必要です。", ephemeral=True)
+            return False
+
     # チャンネルの変更
     async def set_channel(self, interaction: discord.Interaction, channel_id: str):
+        if not await self.check_admin_permissions(interaction):
+            return
         guild_id = str(interaction.guild_id)
         if guild_id in self.server_settings:
             self.server_settings[guild_id]['text_channel_id'] = channel_id
@@ -65,6 +75,11 @@ class MyBot(discord.Client):
 
     # メッセージの追加
     async def add_message(self, interaction: discord.Interaction, message: str):
+        if not await self.check_admin_permissions(interaction):
+            return
+        if len(message) > 200:
+            await interaction.response.send_message("メッセージは200文字以内にしてください。")
+            return
         guild_id = str(interaction.guild_id)
         if guild_id in self.server_settings:
             self.server_settings[guild_id]['additional_message'] = message
@@ -94,8 +109,7 @@ class MyBot(discord.Client):
                     embed.add_field(name="チャンネル", value=after.channel.name)
                     embed.add_field(name="開始時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     embed.add_field(name="開始したユーザー", value=member.name)
-                    embed.set_footer(text=additional_message)
-                    await channel.send(embed=embed)
+                    await channel.send(additional_message, embed=embed)
 
                 # 通話終了時のメッセージ
                 if before.channel is not None and after.channel is None:
@@ -111,8 +125,7 @@ class MyBot(discord.Client):
                             embed.add_field(name="チャンネル", value=before.channel.name)
                             embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                             embed.add_field(name="継続時間", value=str(duration))
-                            embed.set_footer(text=additional_message)
-                            await channel.send(embed=embed)
+                            await channel.send(additional_message, embed=embed)
                         else:
                             embed = discord.Embed(title="通話終了",
                                                   description="ボイスチャンネルが終了しました。",
