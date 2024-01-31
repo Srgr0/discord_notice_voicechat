@@ -131,8 +131,7 @@ class MyBot(discord.Client):
                                               color=discord.Color.red())
                         embed.add_field(name="チャンネル", value=before.channel.name)
                         embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                        embed.set_footer(text=additional_message)
-                        await channel.send(embed=embed)
+                        await channel.send(additional_message, embed=embed)
 
 # 実行
 bot = MyBot()
