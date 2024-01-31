@@ -101,7 +101,7 @@ class MyBot(discord.Client):
                     return
 
                 # 通話開始時のメッセージ
-                if before.channel is None and after.channel is not None:
+                if after.channel is not None and len(after.channel.members) == 1:
                     self.voice_states[after.channel.id] = datetime.now()
                     embed = discord.Embed(title="通話開始",
                                           description="ボイスチャットが開始されました。",
@@ -112,28 +112,27 @@ class MyBot(discord.Client):
                     await channel.send(additional_message, embed=embed)
 
                 # 通話終了時のメッセージ
-                if before.channel is not None and after.channel is None:
-                    if len(before.channel.members) == 0:
-                        # 通話開始時刻が記録されていれば、通話時間を計算する
-                        # 辞書データが飛ぶ可能性を想定して、継続時間なしのメッセージも用意しておく
-                        start_time = self.voice_states.pop(before.channel.id, None)
-                        if start_time:
-                            duration = datetime.now() - start_time
-                            embed = discord.Embed(title="通話終了",
-                                                  description="ボイスチャットが終了しました。",
-                                                  color=discord.Color.red())
-                            embed.add_field(name="チャンネル", value=before.channel.name)
-                            embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                            embed.add_field(name="継続時間", value=str(duration))
-                            await channel.send(additional_message, embed=embed)
-                        else:
-                            embed = discord.Embed(title="通話終了",
-                                                  description="ボイスチャンネルが終了しました。",
-                                                  color=discord.Color.red())
-                            embed.add_field(name="チャンネル", value=before.channel.name)
-                            embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                            embed.set_footer(text=additional_message)
-                            await channel.send(embed=embed)
+                if before.channel is not None and len(before.channel.members) == 0:
+                    # 通話開始時刻が記録されていれば、通話時間を計算する
+                    # 辞書データが飛ぶ可能性を想定して、継続時間なしのメッセージも用意しておく
+                    start_time = self.voice_states.pop(before.channel.id, None)
+                    if start_time:
+                        duration = datetime.now() - start_time
+                        embed = discord.Embed(title="通話終了",
+                                              description="ボイスチャットが終了しました。",
+                                              color=discord.Color.red())
+                        embed.add_field(name="チャンネル", value=before.channel.name)
+                        embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                        embed.add_field(name="継続時間", value=str(duration))
+                        await channel.send(additional_message, embed=embed)
+                    else:
+                        embed = discord.Embed(title="通話終了",
+                                              description="ボイスチャンネルが終了しました。",
+                                              color=discord.Color.red())
+                        embed.add_field(name="チャンネル", value=before.channel.name)
+                        embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                        embed.set_footer(text=additional_message)
+                        await channel.send(embed=embed)
 
 # 実行
 bot = MyBot()
