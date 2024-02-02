@@ -1,4 +1,6 @@
 
+bot_version = '2024.01.31.2'
+
 import discord
 from discord import app_commands
 import json
@@ -14,8 +16,10 @@ class MyBot(discord.Client):
         self.tree = app_commands.CommandTree(self)
         # 早めに登録しないと、反映されない場合がある
         # https://discordpy.readthedocs.io/ja/latest/api.html?highlight=on_ready#discord.on_ready
+        self.tree.add_command(app_commands.Command(name='show_version', description='Botのバージョンを表示します。', callback=self.show_version))
         self.tree.add_command(app_commands.Command(name='set_channel', description='投稿するテキストチャンネルを設定します。', callback=self.set_channel))
-        self.tree.add_command(app_commands.Command(name='add_message', description='投稿時に任意のメッセージを追加します。', callback=self.add_message))
+        self.tree.add_command(app_commands.Command(name='add_message_start', description='ボイスチャット開始時の通知にカスタムメッセージを追加します。', callback=self.add_message_start))
+        self.tree.add_command(app_commands.Command(name='add_message_end', description='ボイスチャット終了時の通知にカスタムメッセージを追加します。', callback=self.add_message_end))
         self.settings_file = 'settings.json'
         self.voice_states = {}
         self.synced = False
@@ -61,6 +65,12 @@ class MyBot(discord.Client):
             await interaction.response.send_message("このコマンドを使用するには管理者権限が必要です。", ephemeral=True)
             return False
 
+    # バージョンの表示
+    async def show_version(self, interaction: discord.Interaction):
+        if not await self.check_admin_permissions(interaction):
+            return
+        await interaction.response.send_message(f"Botのバージョン:{bot_version}")
+
     # チャンネルの変更
     async def set_channel(self, interaction: discord.Interaction, channel_id: str):
         if not await self.check_admin_permissions(interaction):
@@ -73,8 +83,8 @@ class MyBot(discord.Client):
         else:
             await interaction.response.send_message("このサーバーの設定が見つかりません。")
 
-    # メッセージの追加
-    async def add_message(self, interaction: discord.Interaction, message: str):
+    # 開始時カスタムメッセージの設定
+    async def add_message_start(self, interaction: discord.Interaction, message: str):
         if not await self.check_admin_permissions(interaction):
             return
         if len(message) > 200:
@@ -82,9 +92,24 @@ class MyBot(discord.Client):
             return
         guild_id = str(interaction.guild_id)
         if guild_id in self.server_settings:
-            self.server_settings[guild_id]['additional_message'] = message
+            self.server_settings[guild_id]['additional_message_start'] = message
             self.save_settings()
-            await interaction.response.send_message(f"追加メッセージを設定しました: {message}")
+            await interaction.response.send_message(f"終了時カスタムメッセージを設定しました: {message}")
+        else:
+            await interaction.response.send_message("このサーバーの設定が見つかりません。")
+
+    # 終了時カスタムメッセージの設定
+    async def add_message_end(self, interaction: discord.Interaction, message: str):
+        if not await self.check_admin_permissions(interaction):
+            return
+        if len(message) > 200:
+            await interaction.response.send_message("メッセージは200文字以内にしてください。")
+            return
+        guild_id = str(interaction.guild_id)
+        if guild_id in self.server_settings:
+            self.server_settings[guild_id]['additional_message_end'] = message
+            self.save_settings()
+            await interaction.response.send_message(f"終了時カスタムメッセージを設定しました: {message}")
         else:
             await interaction.response.send_message("このサーバーの設定が見つかりません。")
 
@@ -93,7 +118,8 @@ class MyBot(discord.Client):
         # 登録されているサーバーでのみ処理を行う
         if before.channel != after.channel:
             channel_id = self.server_settings.get(str(member.guild.id), {}).get('text_channel_id')
-            additional_message = self.server_settings.get(str(member.guild.id), {}).get('additional_message', '')
+            additional_message_start = self.server_settings.get(str(member.guild.id), {}).get('additional_message_start', '')
+            additional_message_end = self.server_settings.get(str(member.guild.id), {}).get('additional_message_end', '')
 
             if channel_id:
                 channel = member.guild.get_channel(int(channel_id))
@@ -109,7 +135,7 @@ class MyBot(discord.Client):
                     embed.add_field(name="チャンネル", value=after.channel.name)
                     embed.add_field(name="開始時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     embed.add_field(name="開始したユーザー", value=member.name)
-                    await channel.send(additional_message, embed=embed)
+                    await channel.send(additional_message_start, embed=embed)
 
                 # 通話終了時のメッセージ
                 if before.channel is not None and len(before.channel.members) == 0:
@@ -124,14 +150,14 @@ class MyBot(discord.Client):
                         embed.add_field(name="チャンネル", value=before.channel.name)
                         embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                         embed.add_field(name="継続時間", value=str(duration))
-                        await channel.send(additional_message, embed=embed)
+                        await channel.send(additional_message_end, embed=embed)
                     else:
                         embed = discord.Embed(title="通話終了",
                                               description="ボイスチャンネルが終了しました。",
                                               color=discord.Color.red())
                         embed.add_field(name="チャンネル", value=before.channel.name)
                         embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                        await channel.send(additional_message, embed=embed)
+                        await channel.send(additional_message_end, embed=embed)
 
 # 実行
 bot = MyBot()
