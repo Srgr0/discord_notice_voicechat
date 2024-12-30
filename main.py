@@ -1,5 +1,5 @@
 
-bot_version = '2024.01.31.2'
+bot_version = '2024.12.30.1'
 
 import discord
 from discord import app_commands
@@ -134,7 +134,7 @@ class MyBot(discord.Client):
                                           color=discord.Color.green())
                     embed.add_field(name="チャンネル", value=after.channel.name)
                     embed.add_field(name="開始時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                    embed.add_field(name="開始したユーザー", value=member.name)
+                    embed.add_field(name="開始したユーザー", value=f"{member.display_name} ({member.name})")
                     await channel.send(additional_message_start, embed=embed)
 
                 # 通話終了時のメッセージ
