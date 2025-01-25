@@ -1,5 +1,4 @@
-
-bot_version = '2024.12.30.1'
+bot_version = '2025.01.26.1'
 
 import discord
 from discord import app_commands
@@ -71,6 +70,37 @@ class MyBot(discord.Client):
             return
         await interaction.response.send_message(f"Botのバージョン:{bot_version}")
 
+    # Botに、動作に必要な権限が付与されているか確認
+    # 必要な権限: send_messages, embed_links, connect
+    async def check_permissions(self, interaction: discord.Interaction):
+        if not await self.check_admin_permissions(interaction):
+            return
+        required_perms = ['send_messages', 'embed_links', 'connect']
+        permissions = interaction.guild.members.me.permissions
+        required_list = []
+        other_list = []
+        for perm, value in permissions:
+            if perm in required_perms:
+                required_list.append(f"{'✅' if value else '❌'} {perm}")
+            else:
+                other_list.append(f"{'✅' if value else '❌'} {perm}")
+        embed = discord.Embed(
+            title="権限一覧",
+            color=discord.Color.blue()
+        )
+        embed.add_field(
+            name="必要な権限",
+            value="\n".join(required_list),
+            inline=False
+        )
+        embed.add_field(
+            name="その他の権限",
+            value="\n".join(other_list),
+            inline=False
+        )
+        await interaction.response.send_message(embed=embed)
+        return True
+
     # チャンネルの変更
     async def set_channel(self, interaction: discord.Interaction, channel_id: str):
         if not await self.check_admin_permissions(interaction):
@@ -129,9 +159,10 @@ class MyBot(discord.Client):
                 # 通話開始時のメッセージ
                 if after.channel is not None and len(after.channel.members) == 1:
                     self.voice_states[after.channel.id] = datetime.now()
-                    embed = discord.Embed(title="通話開始",
-                                          description="ボイスチャットが開始されました。",
-                                          color=discord.Color.green())
+                    embed = discord.Embed(
+                        title="通話開始",
+                        description="ボイスチャットが開始されました。",
+                        color=discord.Color.green())
                     embed.add_field(name="チャンネル", value=after.channel.name)
                     embed.add_field(name="開始時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     embed.add_field(name="開始したユーザー", value=f"{member.display_name} ({member.name})")
@@ -144,17 +175,19 @@ class MyBot(discord.Client):
                     start_time = self.voice_states.pop(before.channel.id, None)
                     if start_time:
                         duration = datetime.now() - start_time
-                        embed = discord.Embed(title="通話終了",
-                                              description="ボイスチャットが終了しました。",
-                                              color=discord.Color.red())
+                        embed = discord.Embed(
+                            title="通話終了",
+                            description="ボイスチャットが終了しました。",
+                            color=discord.Color.red())
                         embed.add_field(name="チャンネル", value=before.channel.name)
                         embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                         embed.add_field(name="継続時間", value=str(duration))
                         await channel.send(additional_message_end, embed=embed)
                     else:
-                        embed = discord.Embed(title="通話終了",
-                                              description="ボイスチャンネルが終了しました。",
-                                              color=discord.Color.red())
+                        embed = discord.Embed(
+                            title="通話終了",
+                            description="ボイスチャンネルが終了しました。",
+                            color=discord.Color.red())
                         embed.add_field(name="チャンネル", value=before.channel.name)
                         embed.add_field(name="終了時間", value=datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                         await channel.send(additional_message_end, embed=embed)
