@@ -1,4 +1,4 @@
-bot_version = '2025.01.26.1'
+bot_version = '2025.01.26.2'
 
 import discord
 from discord import app_commands
@@ -16,6 +16,7 @@ class MyBot(discord.Client):
         # 早めに登録しないと、反映されない場合がある
         # https://discordpy.readthedocs.io/ja/latest/api.html?highlight=on_ready#discord.on_ready
         self.tree.add_command(app_commands.Command(name='show_version', description='Botのバージョンを表示します。', callback=self.show_version))
+        self.tree.add_command(app_commands.Command(name='check_permissions', description='Botに必要な権限が付与されているか確認します。', callback=self.check_permissions))
         self.tree.add_command(app_commands.Command(name='set_channel', description='投稿するテキストチャンネルを設定します。', callback=self.set_channel))
         self.tree.add_command(app_commands.Command(name='add_message_start', description='ボイスチャット開始時の通知にカスタムメッセージを追加します。', callback=self.add_message_start))
         self.tree.add_command(app_commands.Command(name='add_message_end', description='ボイスチャット終了時の通知にカスタムメッセージを追加します。', callback=self.add_message_end))
