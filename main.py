@@ -77,7 +77,7 @@ class MyBot(discord.Client):
         if not await self.check_admin_permissions(interaction):
             return
         required_perms = ['send_messages', 'embed_links', 'connect']
-        permissions = interaction.guild.members.me.permissions
+        permissions = interaction.guild.me.guild_permissions
         required_list = []
         other_list = []
         for perm, value in permissions:
